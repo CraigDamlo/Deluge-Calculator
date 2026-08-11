@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Deluge Calculator</title>
+<style>
+  :root{
+    --bg: #282a36;
+    --bg-raised: #21222c;
+    --fg: #f8f8f2;
+    --dim: #6272a4;
+    --line: #383a4c;
+    --accent: #ffb86c;
+    --accent-2: #bd93f9;
+    --green: #50fa7b;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 64px;
+  }
+  main{ width:100%; max-width: 460px; }
+
+  header{ margin-bottom: 28px; }
+  h1{
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+    color: var(--fg);
+  }
+  h1 span{ color: var(--accent); }
+  .sub{ color: var(--dim); font-size: 0.85rem; margin:0; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .field{
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .field.wide{ grid-column: 1 / -1; }
+  label{
+    display:block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+  input[type=number]{
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 1.3rem;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance: none; margin:0;
+  }
+  input:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  .timesig{ display:flex; align-items:center; gap: 6px; }
+  .timesig input{ text-align:center; }
+  .timesig .slash{ color: var(--dim); font-size: 1.3rem; }
+
+  .result{
+    margin-top: 20px;
+    background: linear-gradient(160deg, var(--bg-raised), #1b1c24);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .result .label{
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+  .result .time{
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--green);
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .breakdown{
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 8px;
+  }
+  .breakdown .k{ color: var(--dim); font-size: 0.78rem; }
+  .breakdown .v{ color: var(--fg); font-size: 0.78rem; text-align:right; }
+
+  /* row visual — echoes the Deluge's arrangement grid */
+  .rows{
+    display:flex;
+    gap: 4px;
+    margin-top: 18px;
+    height: 28px;
+    align-items: flex-end;
+  }
+  .rows .cell{
+    flex: 1;
+    background: var(--accent-2);
+    opacity: 0.35;
+    border-radius: 2px;
+    min-width: 3px;
+  }
+
+  .notes{
+    margin-top: 28px;
+    font-size: 0.78rem;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .notes strong{ color: var(--fg); }
+
+  footer{
+    margin-top: 24px;
+    font-size: 0.72rem;
+    color: var(--dim);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Deluge <span>Calculator</span></h1>
+    <p class="sub">Song length from BPM, time signature, and arrangement.</p>
+  </header>
+
+  <div class="grid">
+    <div class="field">
+      <label for="bpm">BPM</label>
+      <input type="number" id="bpm" value="120" min="1" step="0.1">
+    </div>
+    <div class="field">
+      <label for="tsig">Time Signature</label>
+      <div class="timesig">
+        <input type="number" id="tsigNum" value="4" min="1" step="1">
+        <span class="slash">/</span>
+        <input type="number" id="tsigDen" value="4" min="1" step="1">
+      </div>
+    </div>
+    <div class="field">
+      <label for="sections">Sections</label>
+      <input type="number" id="sections" value="8" min="1" step="1">
+    </div>
+    <div class="field">
+      <label for="bars">Bars per Section</label>
+      <input type="number" id="bars" value="8" min="1" step="1">
+    </div>
+  </div>
+
+  <div class="result">
+    <div class="label">Song Length</div>
+    <div class="time" id="timeOut">00:00</div>
+    <div class="rows" id="rowsVis"></div>
+    <div class="breakdown">
+      <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
+      <div class="k">Total beats</div><div class="v" id="totalBeats">—</div>
+      <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
+    </div>
+  </div>
+
+  <p class="notes">
+    <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
+    <strong>Sections</strong> are your arranger rows — verse, chorus, break, etc.<br>
+    Works offline once loaded — bookmark it on your phone.
+  </p>
+
+  <footer>Themed with Dracula Classic — a companion to M8 Calculator</footer>
+</main>
+
+<script>
+  const bpmEl = document.getElementById('bpm');
+  const numEl = document.getElementById('tsigNum');
+  const denEl = document.getElementById('tsigDen');
+  const sectionsEl = document.getElementById('sections');
+  const barsEl = document.getElementById('bars');
+
+  const timeOut = document.getElementById('timeOut');
+  const totalBarsOut = document.getElementById('totalBars');
+  const totalBeatsOut = document.getElementById('totalBeats');
+  const beatsPerBarOut = document.getElementById('beatsPerBar');
+  const rowsVis = document.getElementById('rowsVis');
+
+  function clampPositive(v, fallback){
+    const n = parseFloat(v);
+    return (isFinite(n) && n > 0) ? n : fallback;
+  }
+
+  function formatTime(totalSeconds){
+    if (!isFinite(totalSeconds) || totalSeconds < 0) return '00:00';
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = Math.floor(totalSeconds % 60);
+    const pad = (n) => String(n).padStart(2, '0');
+    return hours > 0
+      ? `${pad(hours)}:${pad(mins)}:${pad(secs)}`
+      : `${pad(mins)}:${pad(secs)}`;
+  }
+
+  function drawRows(sections){
+    rowsVis.innerHTML = '';
+    const count = Math.min(Math.max(Math.round(sections), 1), 32);
+    for (let i = 0; i < count; i++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.height = `${40 + (i % 4) * 15}%`;
+      rowsVis.appendChild(cell);
+    }
+  }
+
+  function calculate(){
+    const bpm = clampPositive(bpmEl.value, 120);
+    const num = clampPositive(numEl.value, 4);
+    const den = clampPositive(denEl.value, 4);
+    const sections = clampPositive(sectionsEl.value, 1);
+    const bars = clampPositive(barsEl.value, 1);
+
+    const beatsPerBar = num * (4 / den);
+    const totalBars = sections * bars;
+    const totalBeats = totalBars * beatsPerBar;
+    const totalSeconds = (totalBeats / bpm) * 60;
+
+    timeOut.textContent = formatTime(totalSeconds);
+    totalBarsOut.textContent = totalBars.toLocaleString();
+    totalBeatsOut.textContent = totalBeats.toLocaleString(undefined, {maximumFractionDigits: 2});
+    beatsPerBarOut.textContent = beatsPerBar.toLocaleString(undefined, {maximumFractionDigits: 2});
+
+    drawRows(sections);
+  }
+
+  [bpmEl, numEl, denEl, sectionsEl, barsEl].forEach(el => {
+    el.addEventListener('input', calculate);
+  });
+
+  calculate();
+</script>
+</body>
+</html>
