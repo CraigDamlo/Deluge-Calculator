@@ -220,6 +220,95 @@
     Works offline once loaded — bookmark it on your phone.
   </p>
 
+  <section class="explainer">
+    <h2>Anatomy of the Deluge</h2>
+    <svg viewBox="0 0 460 260" class="diagram" role="img" aria-label="Simplified diagram of the Deluge control layout">
+      <rect x="10" y="10" width="440" height="240" rx="14" fill="var(--bg-raised)" stroke="var(--line)"/>
+      <!-- screen -->
+      <rect x="34" y="32" width="150" height="48" rx="4" fill="#1b1c24" stroke="var(--accent-2)"/>
+      <text x="109" y="60" text-anchor="middle" class="d-label small">OLED</text>
+      <!-- mode buttons -->
+      <rect x="34" y="92" width="34" height="20" rx="3" fill="#1b1c24" stroke="var(--line)"/>
+      <text x="51" y="106" text-anchor="middle" class="d-label tiny">SONG</text>
+      <rect x="72" y="92" width="34" height="20" rx="3" fill="#1b1c24" stroke="var(--line)"/>
+      <text x="89" y="106" text-anchor="middle" class="d-label tiny">CLIP</text>
+      <rect x="110" y="92" width="34" height="20" rx="3" fill="#1b1c24" stroke="var(--line)"/>
+      <text x="127" y="106" text-anchor="middle" class="d-label tiny">KIT</text>
+      <rect x="148" y="92" width="36" height="20" rx="3" fill="#1b1c24" stroke="var(--line)"/>
+      <text x="166" y="106" text-anchor="middle" class="d-label tiny">SYNTH</text>
+      <!-- encoders -->
+      <circle cx="48" cy="140" r="12" fill="none" stroke="var(--accent)"/>
+      <circle cx="80" cy="140" r="12" fill="none" stroke="var(--accent)"/>
+      <circle cx="112" cy="140" r="12" fill="none" stroke="var(--accent)"/>
+      <circle cx="144" cy="140" r="12" fill="none" stroke="var(--accent)"/>
+      <text x="96" y="168" text-anchor="middle" class="d-label small">Gold Encoders</text>
+      <!-- main pad grid -->
+      <g id="padGrid"></g>
+      <text x="330" y="200" text-anchor="middle" class="d-label small">Main Pad Grid</text>
+      <!-- callout lines -->
+      <line x1="184" y1="56" x2="230" y2="56" stroke="var(--dim)" stroke-dasharray="2,3"/>
+      <text x="235" y="60" class="d-label tiny dim">Shows params &amp; menu pages</text>
+      <line x1="96" y1="118" x2="96" y2="200" stroke="var(--dim)" stroke-dasharray="2,3"/>
+      <text x="20" y="216" class="d-label tiny dim">Switch between Song / Clip / Kit / Synth views</text>
+    </svg>
+    <p class="notes">
+      "Page" usually refers to the small parameter screens on the OLED (filter page, envelope page, etc.) — not the song-building terms below. For arranging music, the Deluge's own vocabulary is <strong>Step, Bar, Clip, Section,</strong> and <strong>Arranger.</strong>
+    </p>
+
+    <h2>Bar → Clip → Section → Song</h2>
+    <svg viewBox="0 0 460 250" class="diagram" role="img" aria-label="Diagram showing how steps build into bars, clips, sections, and the arranged song">
+      <!-- steps -->
+      <text x="20" y="24" class="d-label small">Step</text>
+      <g id="stepRow"></g>
+      <text x="330" y="24" class="d-label tiny dim">16 steps = 1 bar (default resolution)</text>
+
+      <!-- bar -->
+      <text x="20" y="72" class="d-label small">Bar</text>
+      <rect x="70" y="56" width="120" height="20" rx="3" fill="none" stroke="var(--accent)"/>
+      <text x="200" y="70" class="d-label tiny dim">One measure of music</text>
+
+      <!-- clip -->
+      <text x="20" y="118" class="d-label small">Clip</text>
+      <rect x="70" y="98" width="240" height="24" rx="3" fill="var(--accent-2)" opacity="0.35" stroke="var(--accent-2)"/>
+      <text x="80" y="114" class="d-label tiny">4 bars, looped</text>
+      <text x="330" y="116" class="d-label tiny dim">A loopable pattern on one track</text>
+
+      <!-- section -->
+      <text x="20" y="164" class="d-label small">Section</text>
+      <rect x="70" y="144" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="98" y="144" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="126" y="144" width="24" height="24" rx="3" fill="var(--green)" opacity="0.4"/>
+      <text x="200" y="160" class="d-label tiny dim">Clips sharing a color, launchable</text>
+      <text x="200" y="174" class="d-label tiny dim">together in Song view</text>
+
+      <!-- arranger -->
+      <text x="20" y="216" class="d-label small">Arranger</text>
+      <g id="arrangerRow"></g>
+      <text x="200" y="234" class="d-label tiny dim">Sections placed in order over time = the song</text>
+    </svg>
+  </section>
+
+  <style>
+    .explainer{ margin-top: 28px; }
+    .explainer h2{
+      font-size: 0.95rem;
+      color: var(--accent);
+      margin: 24px 0 10px;
+      letter-spacing: 0.02em;
+    }
+    .diagram{
+      width: 100%;
+      height: auto;
+      background: var(--bg-raised);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .d-label{ fill: var(--fg); font-family: inherit; }
+    .d-label.small{ font-size: 11px; }
+    .d-label.tiny{ font-size: 9px; }
+    .d-label.dim{ fill: var(--dim); }
+  </style>
+
   <footer>Themed with Dracula Classic — a companion to M8 Calculator</footer>
 </main>
 
@@ -325,6 +414,72 @@
   [bpmEl, numEl, denEl, sectionsEl, barsEl, targetMinEl, targetSecEl].forEach(el => {
     el.addEventListener('input', calculate);
   });
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs){
+    const el = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function drawPadGrid(){
+    const group = document.getElementById('padGrid');
+    if (!group) return;
+    const cols = 8, rows = 4, size = 14, gap = 3;
+    const startX = 250, startY = 40;
+    const colors = ['var(--accent)', 'var(--accent-2)', 'var(--green)', '#ff79c6'];
+    for (let r = 0; r < rows; r++){
+      for (let c = 0; c < cols; c++){
+        const rect = svgEl('rect', {
+          x: startX + c * (size + gap),
+          y: startY + r * (size + gap),
+          width: size, height: size, rx: 2,
+          fill: colors[r % colors.length],
+          opacity: 0.3 + (0.15 * ((r + c) % 3))
+        });
+        group.appendChild(rect);
+      }
+    }
+  }
+
+  function drawStepRow(){
+    const group = document.getElementById('stepRow');
+    if (!group) return;
+    const count = 16, size = 12, gap = 2, startX = 70, y = 10;
+    for (let i = 0; i < count; i++){
+      const rect = svgEl('rect', {
+        x: startX + i * (size + gap), y, width: size, height: size, rx: 2,
+        fill: 'none', stroke: 'var(--accent)'
+      });
+      group.appendChild(rect);
+    }
+  }
+
+  function drawArrangerRow(){
+    const group = document.getElementById('arrangerRow');
+    if (!group) return;
+    const pattern = [
+      { w: 40, color: 'var(--accent-2)' },
+      { w: 40, color: 'var(--accent-2)' },
+      { w: 28, color: 'var(--green)' },
+      { w: 40, color: 'var(--accent-2)' },
+      { w: 28, color: '#ff79c6' },
+      { w: 40, color: 'var(--accent-2)' },
+    ];
+    let x = 70;
+    const y = 198, h = 24;
+    pattern.forEach(seg => {
+      group.appendChild(svgEl('rect', {
+        x, y, width: seg.w, height: h, rx: 2,
+        fill: seg.color, opacity: 0.45, stroke: seg.color
+      }));
+      x += seg.w + 3;
+    });
+  }
+
+  drawPadGrid();
+  drawStepRow();
+  drawArrangerRow();
 
   calculate();
 </script>
