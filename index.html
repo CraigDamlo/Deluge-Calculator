@@ -180,6 +180,26 @@
     </div>
   </div>
 
+  <div class="field wide" style="margin-top: 20px;">
+    <label>Target Note / Drone Length</label>
+    <div class="timesig">
+      <input type="number" id="targetMin" value="1" min="0" step="1">
+      <span class="slash">min</span>
+      <input type="number" id="targetSec" value="0" min="0" step="1">
+      <span class="slash">sec</span>
+    </div>
+  </div>
+
+  <div class="result">
+    <div class="label">Bars Needed</div>
+    <div class="time" id="barsNeededOut">—</div>
+    <div class="breakdown">
+      <div class="k">Exact bars</div><div class="v" id="exactBars">—</div>
+      <div class="k">Sections (at current bars/section)</div><div class="v" id="sectionsNeeded">—</div>
+      <div class="k">Actual length (rounded)</div><div class="v" id="actualLength">—</div>
+    </div>
+  </div>
+
   <div class="result">
     <div class="label">Song Length</div>
     <div class="time" id="timeOut">00:00</div>
@@ -194,6 +214,7 @@
   </div>
 
   <p class="notes">
+    <strong>Bars Needed</strong> works backward from your BPM and time signature: enter a target length and it tells you how many bars a clip needs to hold so a drone or sustained note runs at least that long (rounded up to a whole bar, since Deluge clips loop on bar boundaries).<br>
     <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
     <strong>Sections</strong> are your arranger rows — verse, chorus, break, etc.<br>
     Works offline once loaded — bookmark it on your phone.
@@ -208,6 +229,8 @@
   const denEl = document.getElementById('tsigDen');
   const sectionsEl = document.getElementById('sections');
   const barsEl = document.getElementById('bars');
+  const targetMinEl = document.getElementById('targetMin');
+  const targetSecEl = document.getElementById('targetSec');
 
   const timeOut = document.getElementById('timeOut');
   const totalBarsOut = document.getElementById('totalBars');
@@ -216,10 +239,19 @@
   const sectionLengthOut = document.getElementById('sectionLength');
   const barLengthOut = document.getElementById('barLength');
   const rowsVis = document.getElementById('rowsVis');
+  const barsNeededOut = document.getElementById('barsNeededOut');
+  const exactBarsOut = document.getElementById('exactBars');
+  const sectionsNeededOut = document.getElementById('sectionsNeeded');
+  const actualLengthOut = document.getElementById('actualLength');
 
   function clampPositive(v, fallback){
     const n = parseFloat(v);
     return (isFinite(n) && n > 0) ? n : fallback;
+  }
+
+  function clampNonNegative(v, fallback){
+    const n = parseFloat(v);
+    return (isFinite(n) && n >= 0) ? n : fallback;
   }
 
   function formatTime(totalSeconds){
@@ -273,10 +305,24 @@
     sectionLengthOut.textContent = formatShortTime(sectionSeconds);
     barLengthOut.textContent = formatShortTime(barSeconds);
 
+    const targetMin = clampNonNegative(targetMinEl.value, 1);
+    const targetSec = clampNonNegative(targetSecEl.value, 0);
+    const targetTotalSeconds = targetMin * 60 + targetSec;
+
+    const exactBars = targetTotalSeconds / barSeconds;
+    const barsNeeded = Math.ceil(exactBars);
+    const actualSeconds = barsNeeded * barSeconds;
+    const sectionsNeeded = barsNeeded / bars;
+
+    barsNeededOut.textContent = `${barsNeeded} bar${barsNeeded === 1 ? '' : 's'}`;
+    exactBarsOut.textContent = exactBars.toLocaleString(undefined, {maximumFractionDigits: 2});
+    sectionsNeededOut.textContent = sectionsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
+    actualLengthOut.textContent = formatShortTime(actualSeconds);
+
     drawRows(sections);
   }
 
-  [bpmEl, numEl, denEl, sectionsEl, barsEl].forEach(el => {
+  [bpmEl, numEl, denEl, sectionsEl, barsEl, targetMinEl, targetSecEl].forEach(el => {
     el.addEventListener('input', calculate);
   });
 
