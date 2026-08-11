@@ -185,6 +185,8 @@
     <div class="time" id="timeOut">00:00</div>
     <div class="rows" id="rowsVis"></div>
     <div class="breakdown">
+      <div class="k">Section length</div><div class="v" id="sectionLength">—</div>
+      <div class="k">Bar length</div><div class="v" id="barLength">—</div>
       <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
       <div class="k">Total beats</div><div class="v" id="totalBeats">—</div>
       <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
@@ -211,6 +213,8 @@
   const totalBarsOut = document.getElementById('totalBars');
   const totalBeatsOut = document.getElementById('totalBeats');
   const beatsPerBarOut = document.getElementById('beatsPerBar');
+  const sectionLengthOut = document.getElementById('sectionLength');
+  const barLengthOut = document.getElementById('barLength');
   const rowsVis = document.getElementById('rowsVis');
 
   function clampPositive(v, fallback){
@@ -227,6 +231,14 @@
     return hours > 0
       ? `${pad(hours)}:${pad(mins)}:${pad(secs)}`
       : `${pad(mins)}:${pad(secs)}`;
+  }
+
+  function formatShortTime(totalSeconds){
+    if (!isFinite(totalSeconds) || totalSeconds < 0) return '—';
+    if (totalSeconds < 60) return `${totalSeconds.toFixed(2)}s`;
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toFixed(2).padStart(5, '0')}`;
   }
 
   function drawRows(sections){
@@ -251,11 +263,15 @@
     const totalBars = sections * bars;
     const totalBeats = totalBars * beatsPerBar;
     const totalSeconds = (totalBeats / bpm) * 60;
+    const barSeconds = (beatsPerBar / bpm) * 60;
+    const sectionSeconds = barSeconds * bars;
 
     timeOut.textContent = formatTime(totalSeconds);
     totalBarsOut.textContent = totalBars.toLocaleString();
     totalBeatsOut.textContent = totalBeats.toLocaleString(undefined, {maximumFractionDigits: 2});
     beatsPerBarOut.textContent = beatsPerBar.toLocaleString(undefined, {maximumFractionDigits: 2});
+    sectionLengthOut.textContent = formatShortTime(sectionSeconds);
+    barLengthOut.textContent = formatShortTime(barSeconds);
 
     drawRows(sections);
   }
