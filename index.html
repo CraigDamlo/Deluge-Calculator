@@ -252,39 +252,41 @@
       <text x="20" y="216" class="d-label tiny dim">Switch between Song / Clip / Kit / Synth views</text>
     </svg>
     <p class="notes">
-      "Page" usually refers to the small parameter screens on the OLED (filter page, envelope page, etc.) — not the song-building terms below. For arranging music, the Deluge's own vocabulary is <strong>Step, Bar, Clip, Section,</strong> and <strong>Arranger.</strong>
+      <strong>Page</strong> is real Deluge terminology — it's the 16 steps of the pad grid visible on screen at once (default zoom). Scroll left/right and you move a full page at a time. It also shows up loosely for the OLED's parameter screens (filter page, envelope page), but on the pad grid it means those 16 visible steps specifically.
     </p>
 
     <h2>Bar → Clip → Section → Song</h2>
-    <svg viewBox="0 0 460 250" class="diagram" role="img" aria-label="Diagram showing how steps build into bars, clips, sections, and the arranged song">
+    <svg viewBox="0 0 460 270" class="diagram" role="img" aria-label="Diagram showing how steps build into bars, pages, clips, sections, and the arranged song">
       <!-- steps -->
       <text x="20" y="24" class="d-label small">Step</text>
       <g id="stepRow"></g>
-      <text x="330" y="24" class="d-label tiny dim">16 steps = 1 bar (default resolution)</text>
+      <text x="330" y="24" class="d-label tiny dim">16 steps = 1 page = 1 bar (default resolution)</text>
+      <rect x="68" y="8" width="204" height="20" rx="3" fill="none" stroke="var(--accent-2)" stroke-dasharray="3,2"/>
+      <text x="170" y="46" text-anchor="middle" class="d-label tiny dim">Page — the 16 steps visible on screen at once</text>
 
       <!-- bar -->
-      <text x="20" y="72" class="d-label small">Bar</text>
-      <rect x="70" y="56" width="120" height="20" rx="3" fill="none" stroke="var(--accent)"/>
-      <text x="200" y="70" class="d-label tiny dim">One measure of music</text>
+      <text x="20" y="92" class="d-label small">Bar</text>
+      <rect x="70" y="76" width="120" height="20" rx="3" fill="none" stroke="var(--accent)"/>
+      <text x="200" y="90" class="d-label tiny dim">One measure of music</text>
 
       <!-- clip -->
-      <text x="20" y="118" class="d-label small">Clip</text>
-      <rect x="70" y="98" width="240" height="24" rx="3" fill="var(--accent-2)" opacity="0.35" stroke="var(--accent-2)"/>
-      <text x="80" y="114" class="d-label tiny">4 bars, looped</text>
-      <text x="330" y="116" class="d-label tiny dim">A loopable pattern on one track</text>
+      <text x="20" y="138" class="d-label small">Clip</text>
+      <rect x="70" y="118" width="240" height="24" rx="3" fill="var(--accent-2)" opacity="0.35" stroke="var(--accent-2)"/>
+      <text x="80" y="134" class="d-label tiny">4 bars, looped</text>
+      <text x="330" y="136" class="d-label tiny dim">A loopable pattern on one track</text>
 
       <!-- section -->
-      <text x="20" y="164" class="d-label small">Section</text>
-      <rect x="70" y="144" width="24" height="24" rx="3" fill="var(--accent-2)"/>
-      <rect x="98" y="144" width="24" height="24" rx="3" fill="var(--accent-2)"/>
-      <rect x="126" y="144" width="24" height="24" rx="3" fill="var(--green)" opacity="0.4"/>
-      <text x="200" y="160" class="d-label tiny dim">Clips sharing a color, launchable</text>
-      <text x="200" y="174" class="d-label tiny dim">together in Song view</text>
+      <text x="20" y="184" class="d-label small">Section</text>
+      <rect x="70" y="164" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="98" y="164" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="126" y="164" width="24" height="24" rx="3" fill="var(--green)" opacity="0.4"/>
+      <text x="200" y="180" class="d-label tiny dim">Clips sharing a color, launchable</text>
+      <text x="200" y="194" class="d-label tiny dim">together in Song view</text>
 
       <!-- arranger -->
-      <text x="20" y="216" class="d-label small">Arranger</text>
+      <text x="20" y="236" class="d-label small">Arranger</text>
       <g id="arrangerRow"></g>
-      <text x="200" y="234" class="d-label tiny dim">Sections placed in order over time = the song</text>
+      <text x="200" y="254" class="d-label tiny dim">Sections placed in order over time = the song</text>
     </svg>
   </section>
 
@@ -467,7 +469,7 @@
       { w: 40, color: 'var(--accent-2)' },
     ];
     let x = 70;
-    const y = 198, h = 24;
+    const y = 218, h = 24;
     pattern.forEach(seg => {
       group.appendChild(svgEl('rect', {
         x, y, width: seg.w, height: h, rx: 2,
