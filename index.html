@@ -98,6 +98,34 @@
   }
   input:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
+  .hint{
+    font-size: 0.68rem;
+    color: var(--accent);
+    margin-top: 6px;
+  }
+  .hint.warn{ color: var(--accent-2); }
+
+  .page-positions{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .page-chip{
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 64px;
+  }
+  .page-chip .pg{ color: var(--dim); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .page-chip .pos{ color: var(--green); font-weight: 600; }
+  .page-chip.more{ color: var(--dim); justify-content: center; }
+
   .timesig{ display:flex; align-items:center; gap: 6px; }
   .timesig input{ text-align:center; }
   .timesig .slash{ color: var(--dim); font-size: 1.3rem; }
@@ -151,21 +179,6 @@
   .breakdown .v{ color: var(--green); font-size: 0.78rem; text-align:right; font-weight: 600; }
 
   /* row visual — echoes the Deluge's arrangement grid */
-  .rows{
-    display:flex;
-    gap: 4px;
-    margin-top: 18px;
-    height: 28px;
-    align-items: flex-end;
-  }
-  .rows .cell{
-    flex: 1;
-    background: var(--accent-2);
-    opacity: 0.35;
-    border-radius: 2px;
-    min-width: 3px;
-  }
-
   .notes{
     margin-top: 28px;
     font-size: 0.78rem;
@@ -205,7 +218,8 @@
     </div>
     <div class="field">
       <label for="barsPerPage">Bars per Page</label>
-      <input type="number" id="barsPerPage" value="4" min="0.25" step="0.25">
+      <input type="number" id="barsPerPage" value="4" min="0.125" step="0.125">
+      <div class="hint" id="zoomHint">quarter-note zoom</div>
     </div>
     <div class="field wide">
       <label for="totalPagesInput">Total Pages</label>
@@ -217,13 +231,19 @@
   <div class="result" style="margin-top:0;">
     <div class="label">Song Length</div>
     <div class="time" id="timeOut">00:00</div>
-    <div class="rows" id="rowsVis"></div>
     <div class="breakdown">
       <div class="k">Page length</div><div class="v" id="pageLength">—</div>
       <div class="k">Bar length</div><div class="v" id="barLength">—</div>
       <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
       <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
     </div>
+  </div>
+
+  <div class="section-title output-title"><span class="dot"></span>Calculated — what the display shows</div>
+  <div class="result" style="margin-top:0;">
+    <div class="label">Page Positions</div>
+    <p class="hint" style="margin: 0 0 12px;">The Deluge's numeric readout as you scroll from page to page, in bar.beat.16th format.</p>
+    <div id="pagePositions" class="page-positions"></div>
   </div>
 
   <div class="section-title input-title"><span class="dot"></span>You enter — target length</div>
@@ -252,6 +272,7 @@
 
   <p class="notes">
     <strong>Page</strong> is fixed at 16 steps — that's the one thing that never changes. <strong>Bars per Page</strong> is how many bars fit in those 16 steps at your current zoom level (4 bars/page if you're at quarter-note resolution in 4/4, 1 bar/page at the default 16th-note zoom). Set it to match how you actually work.<br>
+    <strong>Page Positions</strong> shows what the Deluge's own display would read as you page through — bar.beat.16th. On real hardware, zoom only steps in doubling increments (16th, 8th, quarter, half, whole, 2-bar...), so the hint under Bars per Page flags it if you've typed a value that doesn't correspond to an actual zoom level.<br>
     <strong>Total Pages</strong> is just the length of your song in pages — however many pages your arrangement actually runs, no assumption that sections are equal length.<br>
     <strong>Bars Needed</strong> works backward from a target length using the same Bars per Page setting, so a drone's length shows up in pages too, not just bars.<br>
     <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
@@ -381,13 +402,14 @@
   const beatsPerBarOut = document.getElementById('beatsPerBar');
   const pageLengthOut = document.getElementById('pageLength');
   const barLengthOut = document.getElementById('barLength');
-  const rowsVis = document.getElementById('rowsVis');
   const barsNeededOut = document.getElementById('barsNeededOut');
   const stepsNeededOut = document.getElementById('stepsNeeded');
   const beatsNeededOut = document.getElementById('beatsNeeded');
   const barsPagesNeededOut = document.getElementById('barsPagesNeeded');
   const pagesNeededOut = document.getElementById('pagesNeeded');
   const actualLengthOut = document.getElementById('actualLength');
+  const zoomHintOut = document.getElementById('zoomHint');
+  const pagePositionsOut = document.getElementById('pagePositions');
 
   function clampPositive(v, fallback){
     const n = parseFloat(v);
@@ -419,14 +441,62 @@
     return `${mins}:${String(secs).padStart(2, '0')}`;
   }
 
-  function drawRows(totalPages){
-    rowsVis.innerHTML = '';
-    const count = Math.min(Math.max(Math.round(totalPages), 1), 32);
-    for (let i = 0; i < count; i++){
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.style.height = `${40 + (i % 4) * 15}%`;
-      rowsVis.appendChild(cell);
+
+
+  const ZOOM_NAMES = [
+    { barsPerPage: 0.125, name: '128th-note zoom' },
+    { barsPerPage: 0.25,  name: '64th-note zoom' },
+    { barsPerPage: 0.5,   name: '32nd-note zoom' },
+    { barsPerPage: 1,     name: '16th-note zoom (default)' },
+    { barsPerPage: 2,     name: '8th-note zoom' },
+    { barsPerPage: 4,     name: 'quarter-note zoom' },
+    { barsPerPage: 8,     name: 'half-note zoom' },
+    { barsPerPage: 16,    name: 'whole-note zoom' },
+    { barsPerPage: 32,    name: '2-bar zoom' },
+    { barsPerPage: 64,    name: '4-bar zoom' },
+  ];
+
+  function zoomHint(barsPerPage){
+    const exact = ZOOM_NAMES.find(z => Math.abs(z.barsPerPage - barsPerPage) < 1e-9);
+    if (exact) return { text: exact.name, warn: false };
+    // find nearest by log2 distance
+    let nearest = ZOOM_NAMES[0];
+    let bestDist = Infinity;
+    for (const z of ZOOM_NAMES){
+      const dist = Math.abs(Math.log2(z.barsPerPage) - Math.log2(barsPerPage));
+      if (dist < bestDist){ bestDist = dist; nearest = z; }
+    }
+    return { text: `not a standard Deluge zoom step — nearest is ${nearest.name} (${nearest.barsPerPage} bars/page)`, warn: true };
+  }
+
+  function formatBarBeatSixteenth(absoluteSixteenth, stepsPerBar16th){
+    const bar = Math.floor(absoluteSixteenth / stepsPerBar16th) + 1;
+    const remainder = absoluteSixteenth % stepsPerBar16th;
+    const beat = Math.floor(remainder / 4) + 1;
+    const sixteenth = (remainder % 4) + 1;
+    return `${bar}.${beat}.${sixteenth}`;
+  }
+
+  function drawPagePositions(totalPages, barsPerPage, beatsPerBar){
+    pagePositionsOut.innerHTML = '';
+    const stepsPerBar16th = beatsPerBar * 4;
+    const sixteenthsPerPage = barsPerPage * stepsPerBar16th;
+    const maxShown = Math.min(Math.round(totalPages), 12);
+
+    for (let p = 0; p < maxShown; p++){
+      const absoluteSixteenth = Math.round(p * sixteenthsPerPage);
+      const posLabel = formatBarBeatSixteenth(absoluteSixteenth, stepsPerBar16th);
+      const chip = document.createElement('div');
+      chip.className = 'page-chip';
+      chip.innerHTML = `<span class="pg">Page ${p + 1}</span><span class="pos">${posLabel}</span>`;
+      pagePositionsOut.appendChild(chip);
+    }
+
+    if (totalPages > maxShown){
+      const more = document.createElement('div');
+      more.className = 'page-chip more';
+      more.textContent = `+${Math.round(totalPages) - maxShown} more`;
+      pagePositionsOut.appendChild(more);
     }
   }
 
@@ -450,6 +520,12 @@
     pageLengthOut.textContent = formatShortTime(pageSeconds);
     barLengthOut.textContent = formatShortTime(barSeconds);
 
+    const hint = zoomHint(barsPerPage);
+    zoomHintOut.textContent = hint.text;
+    zoomHintOut.classList.toggle('warn', hint.warn);
+
+    drawPagePositions(totalPages, barsPerPage, beatsPerBar);
+
     const targetMin = clampNonNegative(targetMinEl.value, 1);
     const targetSec = clampNonNegative(targetSecEl.value, 0);
     const targetTotalSeconds = targetMin * 60 + targetSec;
@@ -469,8 +545,6 @@
     barsPagesNeededOut.textContent = barsNeeded.toLocaleString();
     pagesNeededOut.textContent = pagesNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     actualLengthOut.textContent = formatShortTime(actualSeconds);
-
-    drawRows(totalPages);
   }
 
   [bpmEl, numEl, denEl, barsPerPageEl, totalPagesEl, targetMinEl, targetSecEl].forEach(el => {
