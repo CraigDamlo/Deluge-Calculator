@@ -96,7 +96,18 @@
   input[type=number]::-webkit-inner-spin-button{
     -webkit-appearance: none; margin:0;
   }
-  input:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  input:focus-visible, select:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  select{
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 1.1rem;
+    outline: none;
+  }
+  select option{ background: var(--bg-raised); color: var(--fg); }
 
   .hint{
     font-size: 0.68rem;
@@ -153,12 +164,11 @@
     display:flex;
     align-items:center;
     gap: 6px;
+    margin-bottom: 6px;
   }
   .result .label::before{
     content: "⟶";
     color: var(--green);
-  }
-    margin-bottom: 6px;
   }
   .result .time{
     font-size: 2.5rem;
@@ -177,8 +187,8 @@
   }
   .breakdown .k{ color: var(--dim); font-size: 0.78rem; }
   .breakdown .v{ color: var(--green); font-size: 0.78rem; text-align:right; font-weight: 600; }
+  .breakdown .k.info, .breakdown .v.info{ opacity: 0.65; }
 
-  /* row visual — echoes the Deluge's arrangement grid */
   .notes{
     margin-top: 28px;
     font-size: 0.78rem;
@@ -199,7 +209,7 @@
 <main>
   <header>
     <h1>Deluge <span>Calculator</span></h1>
-    <p class="sub">Song length from BPM, time signature, and arrangement.</p>
+    <p class="sub">Song length from BPM and zoom level — the two real controls on the hardware.</p>
   </header>
 
   <div class="section-title input-title"><span class="dot"></span>You enter — song settings</div>
@@ -207,19 +217,23 @@
     <div class="field">
       <label for="bpm">BPM</label>
       <input type="number" id="bpm" value="120" min="1" step="0.1">
+      <div class="hint">the tempo dial</div>
     </div>
     <div class="field">
-      <label for="tsig">Time Signature</label>
-      <div class="timesig">
-        <input type="number" id="tsigNum" value="4" min="1" step="1">
-        <span class="slash">/</span>
-        <input type="number" id="tsigDen" value="4" min="1" step="1">
-      </div>
-    </div>
-    <div class="field">
-      <label for="barsPerPage">Bars per Page</label>
-      <input type="number" id="barsPerPage" value="4" min="0.125" step="0.125">
-      <div class="hint" id="zoomHint">quarter-note zoom</div>
+      <label for="zoomSelect">Zoom (Step Length)</label>
+      <select id="zoomSelect">
+        <option value="0.03125">128th note</option>
+        <option value="0.0625">64th note</option>
+        <option value="0.125">32nd note</option>
+        <option value="0.25" selected>16th note (default)</option>
+        <option value="0.5">8th note</option>
+        <option value="1">Quarter note</option>
+        <option value="2">Half note</option>
+        <option value="4">Whole note</option>
+        <option value="8">2 whole notes</option>
+        <option value="16">4 whole notes</option>
+      </select>
+      <div class="hint" id="zoomHint">= 1 bar per page</div>
     </div>
     <div class="field wide">
       <label for="totalPagesInput">Total Pages</label>
@@ -232,17 +246,17 @@
     <div class="label">Song Length</div>
     <div class="time" id="timeOut">00:00</div>
     <div class="breakdown">
+      <div class="k">Step length</div><div class="v" id="stepLength">—</div>
       <div class="k">Page length</div><div class="v" id="pageLength">—</div>
-      <div class="k">Bar length</div><div class="v" id="barLength">—</div>
-      <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
-      <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
+      <div class="k info">Total steps</div><div class="v info" id="totalSteps">—</div>
+      <div class="k info">Total bars</div><div class="v info" id="totalBars">—</div>
     </div>
   </div>
 
   <div class="section-title output-title"><span class="dot"></span>Calculated — what the display shows</div>
   <div class="result" style="margin-top:0;">
     <div class="label">Page Positions</div>
-    <p class="hint" style="margin: 0 0 12px;">The Deluge's numeric readout as you scroll from page to page, in bar.beat.16th format.</p>
+    <p class="hint" style="margin: 0 0 12px;">The Deluge's numeric readout as you scroll from page to page, in bar.beat.16th format. This always counts 16 sixteenth-notes as "1 bar" — a fixed display convention, independent of zoom.</p>
     <div id="pagePositions" class="page-positions"></div>
   </div>
 
@@ -257,25 +271,23 @@
     </div>
   </div>
 
-  <div class="section-title output-title"><span class="dot"></span>Calculated — bars needed</div>
+  <div class="section-title output-title"><span class="dot"></span>Calculated — steps needed</div>
   <div class="result" style="margin-top:0;">
-    <div class="label">Bars Needed</div>
-    <div class="time" id="barsNeededOut">—</div>
+    <div class="label">Steps Needed</div>
+    <div class="time" id="stepsNeededOut">—</div>
     <div class="breakdown">
-      <div class="k">Steps</div><div class="v" id="stepsNeeded">—</div>
       <div class="k">Beats</div><div class="v" id="beatsNeeded">—</div>
-      <div class="k">Bars</div><div class="v" id="barsPagesNeeded">—</div>
-      <div class="k">Pages</div><div class="v" id="pagesNeeded">—</div>
       <div class="k">Resulting length</div><div class="v" id="actualLength">—</div>
+      <div class="k info">≈ Bars</div><div class="v info" id="barsNeeded">—</div>
+      <div class="k info">≈ Pages</div><div class="v info" id="pagesNeeded">—</div>
     </div>
   </div>
 
   <p class="notes">
-    <strong>Page</strong> is fixed at 16 steps — that's the one thing that never changes. <strong>Bars per Page</strong> is how many bars fit in those 16 steps at your current zoom level (4 bars/page if you're at quarter-note resolution in 4/4, 1 bar/page at the default 16th-note zoom). Set it to match how you actually work.<br>
-    <strong>Page Positions</strong> shows what the Deluge's own display would read as you page through — bar.beat.16th. On real hardware, zoom only steps in doubling increments (16th, 8th, quarter, half, whole, 2-bar...), so the hint under Bars per Page flags it if you've typed a value that doesn't correspond to an actual zoom level.<br>
-    <strong>Total Pages</strong> is just the length of your song in pages — however many pages your arrangement actually runs, no assumption that sections are equal length.<br>
-    <strong>Bars Needed</strong> works backward from a target length using the same Bars per Page setting, so a drone's length shows up in pages too, not just bars.<br>
-    <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
+    <strong>BPM</strong> and <strong>Zoom</strong> are the only two things that actually change on the hardware — there's no time-signature setting on the Deluge. BPM is the tempo dial; Zoom is what the ◄► knob controls, deciding how much musical time each of the 16 pad columns represents.<br>
+    <strong>Step</strong> is the real unit of granularity — a clip's length can be set to any whole number of steps at your current zoom, down to a single step. That's why "Steps Needed" (not bars) is the number that matches what you can actually dial in.<br>
+    <strong>Page</strong> is fixed at 16 steps — that never changes, regardless of zoom.<br>
+    <strong>Bar</strong>, in the numbers below, is just the Deluge's own display convention: it always counts every 16 sixteenth-notes as one bar, for the numeric readout, regardless of your zoom or the meter you're actually playing in. It's shown here for reference, not because it's something you set.<br>
     Works offline once loaded — bookmark it on your phone.
   </p>
 
@@ -311,7 +323,7 @@
       <text x="20" y="216" class="d-label tiny dim">Switch between Song / Clip / Kit / Synth views</text>
     </svg>
     <p class="notes">
-      <strong>Page</strong> is real Deluge terminology — it's the 16 steps of the pad grid visible on screen at once (default zoom). Scroll left/right and you move a full page at a time. It also shows up loosely for the OLED's parameter screens (filter page, envelope page), but on the pad grid it means those 16 visible steps specifically.
+      <strong>Page</strong> is real Deluge terminology — it's the 16 steps of the pad grid visible on screen at once. Scroll left/right and you move a full page at a time.
     </p>
 
     <h2>Step → Beat → Bar / Page → Clip → Section → Song</h2>
@@ -337,30 +349,30 @@
       <text x="20" y="132" class="d-label small">Clip</text>
       <rect x="64" y="110" width="126" height="36" rx="4" fill="none" stroke="var(--accent-2)" stroke-dasharray="3,2"/>
       <g id="clipRow"></g>
-      <text x="200" y="132" class="d-label tiny dim">your bars/pages, looped as one pattern</text>
+      <text x="200" y="132" class="d-label tiny dim">any number of steps, looped</text>
 
-      <text x="250" y="154" text-anchor="middle" class="d-label tiny dim">↑ however many bars/pages you set = 1 Clip</text>
+      <text x="250" y="154" text-anchor="middle" class="d-label tiny dim">↑ however many steps you set = 1 Clip</text>
 
       <!-- BAR / PAGE -->
       <text x="20" y="182" class="d-label small">Bar</text>
       <text x="20" y="198" class="d-label small">Page</text>
       <g id="barPageGrid"></g>
       <text x="150" y="200" class="d-label tiny dim">16 steps — one screen,</text>
-      <text x="150" y="212" class="d-label tiny dim">however many bars fit at your zoom</text>
+      <text x="150" y="212" class="d-label tiny dim">bars/page depend on Zoom</text>
 
-      <text x="250" y="243" text-anchor="middle" class="d-label tiny dim">↑ your Bars per Page setting = 1 Page (16 steps)</text>
+      <text x="250" y="243" text-anchor="middle" class="d-label tiny dim">↑ 16 sixteenth-notes = 1 Bar (fixed) · Zoom sets bars/Page</text>
 
       <!-- BEAT -->
       <text x="20" y="264" class="d-label small">Beat</text>
       <g id="beatRow"></g>
-      <text x="150" y="264" class="d-label tiny dim">a quarter note</text>
+      <text x="150" y="264" class="d-label tiny dim">a quarter note — set by BPM</text>
 
-      <text x="250" y="281" text-anchor="middle" class="d-label tiny dim">↑ steps per beat also shifts with your zoom</text>
+      <text x="250" y="281" text-anchor="middle" class="d-label tiny dim">↑ 4 sixteenth-notes = 1 Beat (fixed)</text>
 
       <!-- STEP (bottom) -->
       <text x="20" y="302" class="d-label small">Step</text>
       <rect x="70" y="291" width="14" height="14" rx="2" fill="var(--accent)"/>
-      <text x="150" y="302" class="d-label tiny dim">1 square — a 16th note, the smallest unit</text>
+      <text x="150" y="302" class="d-label tiny dim">1 pad column — length set by Zoom</text>
     </svg>
   </section>
 
@@ -390,26 +402,24 @@
 
 <script>
   const bpmEl = document.getElementById('bpm');
-  const numEl = document.getElementById('tsigNum');
-  const denEl = document.getElementById('tsigDen');
-  const barsPerPageEl = document.getElementById('barsPerPage');
+  const zoomSelectEl = document.getElementById('zoomSelect');
   const totalPagesEl = document.getElementById('totalPagesInput');
   const targetMinEl = document.getElementById('targetMin');
   const targetSecEl = document.getElementById('targetSec');
 
   const timeOut = document.getElementById('timeOut');
-  const totalBarsOut = document.getElementById('totalBars');
-  const beatsPerBarOut = document.getElementById('beatsPerBar');
+  const stepLengthOut = document.getElementById('stepLength');
   const pageLengthOut = document.getElementById('pageLength');
-  const barLengthOut = document.getElementById('barLength');
-  const barsNeededOut = document.getElementById('barsNeededOut');
-  const stepsNeededOut = document.getElementById('stepsNeeded');
-  const beatsNeededOut = document.getElementById('beatsNeeded');
-  const barsPagesNeededOut = document.getElementById('barsPagesNeeded');
-  const pagesNeededOut = document.getElementById('pagesNeeded');
-  const actualLengthOut = document.getElementById('actualLength');
+  const totalStepsOut = document.getElementById('totalSteps');
+  const totalBarsOut = document.getElementById('totalBars');
   const zoomHintOut = document.getElementById('zoomHint');
   const pagePositionsOut = document.getElementById('pagePositions');
+
+  const stepsNeededOut = document.getElementById('stepsNeededOut');
+  const beatsNeededOut = document.getElementById('beatsNeeded');
+  const actualLengthOut = document.getElementById('actualLength');
+  const barsNeededOut = document.getElementById('barsNeeded');
+  const pagesNeededOut = document.getElementById('pagesNeeded');
 
   function clampPositive(v, fallback){
     const n = parseFloat(v);
@@ -441,51 +451,24 @@
     return `${mins}:${String(secs).padStart(2, '0')}`;
   }
 
-
-
-  const ZOOM_NAMES = [
-    { barsPerPage: 0.125, name: '128th-note zoom' },
-    { barsPerPage: 0.25,  name: '64th-note zoom' },
-    { barsPerPage: 0.5,   name: '32nd-note zoom' },
-    { barsPerPage: 1,     name: '16th-note zoom (default)' },
-    { barsPerPage: 2,     name: '8th-note zoom' },
-    { barsPerPage: 4,     name: 'quarter-note zoom' },
-    { barsPerPage: 8,     name: 'half-note zoom' },
-    { barsPerPage: 16,    name: 'whole-note zoom' },
-    { barsPerPage: 32,    name: '2-bar zoom' },
-    { barsPerPage: 64,    name: '4-bar zoom' },
-  ];
-
-  function zoomHint(barsPerPage){
-    const exact = ZOOM_NAMES.find(z => Math.abs(z.barsPerPage - barsPerPage) < 1e-9);
-    if (exact) return { text: exact.name, warn: false };
-    // find nearest by log2 distance
-    let nearest = ZOOM_NAMES[0];
-    let bestDist = Infinity;
-    for (const z of ZOOM_NAMES){
-      const dist = Math.abs(Math.log2(z.barsPerPage) - Math.log2(barsPerPage));
-      if (dist < bestDist){ bestDist = dist; nearest = z; }
-    }
-    return { text: `not a standard Deluge zoom step — nearest is ${nearest.name} (${nearest.barsPerPage} bars/page)`, warn: true };
-  }
-
-  function formatBarBeatSixteenth(absoluteSixteenth, stepsPerBar16th){
-    const bar = Math.floor(absoluteSixteenth / stepsPerBar16th) + 1;
-    const remainder = absoluteSixteenth % stepsPerBar16th;
+  function formatBarBeatSixteenth(absoluteSixteenth){
+    // Fixed Deluge display convention: 16 sixteenth-notes = 1 bar, always.
+    const bar = Math.floor(absoluteSixteenth / 16) + 1;
+    const remainder = absoluteSixteenth % 16;
     const beat = Math.floor(remainder / 4) + 1;
     const sixteenth = (remainder % 4) + 1;
     return `${bar}.${beat}.${sixteenth}`;
   }
 
-  function drawPagePositions(totalPages, barsPerPage, beatsPerBar){
+  function drawPagePositions(totalPages, quarterNotesPerStep){
     pagePositionsOut.innerHTML = '';
-    const stepsPerBar16th = beatsPerBar * 4;
-    const sixteenthsPerPage = barsPerPage * stepsPerBar16th;
+    const sixteenthsPerStep = quarterNotesPerStep * 4;
+    const sixteenthsPerPage = sixteenthsPerStep * 16;
     const maxShown = Math.min(Math.round(totalPages), 12);
 
     for (let p = 0; p < maxShown; p++){
       const absoluteSixteenth = Math.round(p * sixteenthsPerPage);
-      const posLabel = formatBarBeatSixteenth(absoluteSixteenth, stepsPerBar16th);
+      const posLabel = formatBarBeatSixteenth(absoluteSixteenth);
       const chip = document.createElement('div');
       chip.className = 'page-chip';
       chip.innerHTML = `<span class="pg">Page ${p + 1}</span><span class="pos">${posLabel}</span>`;
@@ -500,54 +483,63 @@
     }
   }
 
+  const ZOOM_LABELS = {
+    '0.03125': '128th note',
+    '0.0625': '64th note',
+    '0.125': '32nd note',
+    '0.25': '16th note (default)',
+    '0.5': '8th note',
+    '1': 'quarter note',
+    '2': 'half note',
+    '4': 'whole note',
+    '8': '2 whole notes',
+    '16': '4 whole notes',
+  };
+
   function calculate(){
     const bpm = clampPositive(bpmEl.value, 120);
-    const num = clampPositive(numEl.value, 4);
-    const den = clampPositive(denEl.value, 4);
-    const barsPerPage = clampPositive(barsPerPageEl.value, 4);
+    const quarterNotesPerStep = clampPositive(zoomSelectEl.value, 0.25);
     const totalPages = clampPositive(totalPagesEl.value, 1);
 
-    const beatsPerBar = num * (4 / den);
-    const barSeconds = (beatsPerBar / bpm) * 60;
-    const pageSeconds = barSeconds * barsPerPage;
+    const secondsPerBeat = 60 / bpm;
+    const secondsPerStep = secondsPerBeat * quarterNotesPerStep;
+    const secondsPerPage = secondsPerStep * 16;
 
+    const totalSteps = totalPages * 16;
+    const totalSeconds = secondsPerPage * totalPages;
+    const barsPerPage = quarterNotesPerStep * 4;
     const totalBars = totalPages * barsPerPage;
-    const totalSeconds = pageSeconds * totalPages;
 
     timeOut.textContent = formatTime(totalSeconds);
+    stepLengthOut.textContent = formatShortTime(secondsPerStep);
+    pageLengthOut.textContent = formatShortTime(secondsPerPage);
+    totalStepsOut.textContent = totalSteps.toLocaleString();
     totalBarsOut.textContent = totalBars.toLocaleString(undefined, {maximumFractionDigits: 2});
-    beatsPerBarOut.textContent = beatsPerBar.toLocaleString(undefined, {maximumFractionDigits: 2});
-    pageLengthOut.textContent = formatShortTime(pageSeconds);
-    barLengthOut.textContent = formatShortTime(barSeconds);
 
-    const hint = zoomHint(barsPerPage);
-    zoomHintOut.textContent = hint.text;
-    zoomHintOut.classList.toggle('warn', hint.warn);
+    const zoomLabel = ZOOM_LABELS[String(quarterNotesPerStep)] || `${quarterNotesPerStep} quarter notes/step`;
+    zoomHintOut.textContent = `${zoomLabel} = ${barsPerPage.toLocaleString(undefined, {maximumFractionDigits: 3})} bars/page`;
 
-    drawPagePositions(totalPages, barsPerPage, beatsPerBar);
+    drawPagePositions(totalPages, quarterNotesPerStep);
 
     const targetMin = clampNonNegative(targetMinEl.value, 1);
     const targetSec = clampNonNegative(targetSecEl.value, 0);
     const targetTotalSeconds = targetMin * 60 + targetSec;
 
-    const exactBars = targetTotalSeconds / barSeconds;
-    const barsNeeded = Math.ceil(exactBars);
-    const actualSeconds = barsNeeded * barSeconds;
-    const pagesNeeded = barsNeeded / barsPerPage;
+    const exactSteps = targetTotalSeconds / secondsPerStep;
+    const stepsNeeded = Math.ceil(exactSteps);
+    const actualSeconds = stepsNeeded * secondsPerStep;
+    const beatsNeeded = stepsNeeded * quarterNotesPerStep;
+    const barsNeeded = beatsNeeded / 4;
+    const pagesNeeded = stepsNeeded / 16;
 
-    const stepsPerBar = 16 / barsPerPage;
-    const stepsNeeded = barsNeeded * stepsPerBar;
-    const beatsNeeded = barsNeeded * beatsPerBar;
-
-    barsNeededOut.textContent = `${barsNeeded} bar${barsNeeded === 1 ? '' : 's'}`;
-    stepsNeededOut.textContent = stepsNeeded.toLocaleString(undefined, {maximumFractionDigits: 0});
+    stepsNeededOut.textContent = `${stepsNeeded.toLocaleString()} step${stepsNeeded === 1 ? '' : 's'}`;
     beatsNeededOut.textContent = beatsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
-    barsPagesNeededOut.textContent = barsNeeded.toLocaleString();
-    pagesNeededOut.textContent = pagesNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     actualLengthOut.textContent = formatShortTime(actualSeconds);
+    barsNeededOut.textContent = barsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
+    pagesNeededOut.textContent = pagesNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
   }
 
-  [bpmEl, numEl, denEl, barsPerPageEl, totalPagesEl, targetMinEl, targetSecEl].forEach(el => {
+  [bpmEl, zoomSelectEl, totalPagesEl, targetMinEl, targetSecEl].forEach(el => {
     el.addEventListener('input', calculate);
   });
 
