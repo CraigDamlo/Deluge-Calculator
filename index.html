@@ -38,6 +38,24 @@
   h1 span{ color: var(--accent); }
   .sub{ color: var(--dim); font-size: 0.85rem; margin:0; }
 
+  .section-title{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    margin: 24px 0 10px;
+  }
+  .section-title:first-of-type{ margin-top: 0; }
+  .section-title .dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .section-title.input-title .dot{ background: var(--accent-2); }
+  .section-title.output-title .dot{ background: var(--green); }
+
   .grid{
     display:grid;
     grid-template-columns: 1fr 1fr;
@@ -47,6 +65,7 @@
   .field{
     background: var(--bg-raised);
     border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-2);
     border-radius: 8px;
     padding: 12px 14px;
   }
@@ -58,6 +77,10 @@
     letter-spacing: 0.08em;
     color: var(--dim);
     margin-bottom: 6px;
+  }
+  label::before{
+    content: "✎ ";
+    color: var(--accent-2);
   }
   input[type=number]{
     width: 100%;
@@ -83,6 +106,7 @@
     margin-top: 20px;
     background: linear-gradient(160deg, var(--bg-raised), #1b1c24);
     border: 1px solid var(--line);
+    border-left: 3px solid var(--green);
     border-radius: 10px;
     padding: 22px 20px;
     position: relative;
@@ -98,6 +122,14 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--dim);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .result .label::before{
+    content: "⟶";
+    color: var(--green);
+  }
     margin-bottom: 6px;
   }
   .result .time{
@@ -116,7 +148,7 @@
     row-gap: 8px;
   }
   .breakdown .k{ color: var(--dim); font-size: 0.78rem; }
-  .breakdown .v{ color: var(--fg); font-size: 0.78rem; text-align:right; }
+  .breakdown .v{ color: var(--green); font-size: 0.78rem; text-align:right; font-weight: 600; }
 
   /* row visual — echoes the Deluge's arrangement grid */
   .rows{
@@ -157,6 +189,7 @@
     <p class="sub">Song length from BPM, time signature, and arrangement.</p>
   </header>
 
+  <div class="section-title input-title"><span class="dot"></span>You enter — song settings</div>
   <div class="grid">
     <div class="field">
       <label for="bpm">BPM</label>
@@ -174,17 +207,27 @@
       <label for="barsPerPage">Bars per Page</label>
       <input type="number" id="barsPerPage" value="4" min="0.25" step="0.25">
     </div>
-    <div class="field">
-      <label for="sections">Sections</label>
-      <input type="number" id="sections" value="4" min="1" step="1">
-    </div>
     <div class="field wide">
-      <label for="pagesPerSection">Pages per Section</label>
-      <input type="number" id="pagesPerSection" value="2" min="1" step="1">
+      <label for="totalPagesInput">Total Pages</label>
+      <input type="number" id="totalPagesInput" value="8" min="1" step="1">
     </div>
   </div>
 
-  <div class="field wide" style="margin-top: 20px;">
+  <div class="section-title output-title"><span class="dot"></span>Calculated — song length</div>
+  <div class="result" style="margin-top:0;">
+    <div class="label">Song Length</div>
+    <div class="time" id="timeOut">00:00</div>
+    <div class="rows" id="rowsVis"></div>
+    <div class="breakdown">
+      <div class="k">Page length</div><div class="v" id="pageLength">—</div>
+      <div class="k">Bar length</div><div class="v" id="barLength">—</div>
+      <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
+      <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
+    </div>
+  </div>
+
+  <div class="section-title input-title"><span class="dot"></span>You enter — target length</div>
+  <div class="field wide">
     <label>Target Note / Drone Length</label>
     <div class="timesig">
       <input type="number" id="targetMin" value="1" min="0" step="1">
@@ -194,7 +237,8 @@
     </div>
   </div>
 
-  <div class="result">
+  <div class="section-title output-title"><span class="dot"></span>Calculated — bars needed</div>
+  <div class="result" style="margin-top:0;">
     <div class="label">Bars Needed</div>
     <div class="time" id="barsNeededOut">—</div>
     <div class="breakdown">
@@ -202,28 +246,13 @@
       <div class="k">Beats</div><div class="v" id="beatsNeeded">—</div>
       <div class="k">Bars</div><div class="v" id="barsPagesNeeded">—</div>
       <div class="k">Pages</div><div class="v" id="pagesNeeded">—</div>
-      <div class="k">Sections (at current pages/section)</div><div class="v" id="sectionsNeeded">—</div>
-      <div class="k">Actual length (rounded)</div><div class="v" id="actualLength">—</div>
-    </div>
-  </div>
-
-  <div class="result">
-    <div class="label">Song Length</div>
-    <div class="time" id="timeOut">00:00</div>
-    <div class="rows" id="rowsVis"></div>
-    <div class="breakdown">
-      <div class="k">Section length</div><div class="v" id="sectionLength">—</div>
-      <div class="k">Page length</div><div class="v" id="pageLength">—</div>
-      <div class="k">Bar length</div><div class="v" id="barLength">—</div>
-      <div class="k">Total pages</div><div class="v" id="totalPages">—</div>
-      <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
-      <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
+      <div class="k">Resulting length</div><div class="v" id="actualLength">—</div>
     </div>
   </div>
 
   <p class="notes">
     <strong>Page</strong> is fixed at 16 steps — that's the one thing that never changes. <strong>Bars per Page</strong> is how many bars fit in those 16 steps at your current zoom level (4 bars/page if you're at quarter-note resolution in 4/4, 1 bar/page at the default 16th-note zoom). Set it to match how you actually work.<br>
-    <strong>Section</strong> length is entirely up to you — there's no fixed size. <strong>Pages per Section</strong> just says how many pages long you want that chunk of the arrangement to be.<br>
+    <strong>Total Pages</strong> is just the length of your song in pages — however many pages your arrangement actually runs, no assumption that sections are equal length.<br>
     <strong>Bars Needed</strong> works backward from a target length using the same Bars per Page setting, so a drone's length shows up in pages too, not just bars.<br>
     <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
     Works offline once loaded — bookmark it on your phone.
@@ -343,16 +372,13 @@
   const numEl = document.getElementById('tsigNum');
   const denEl = document.getElementById('tsigDen');
   const barsPerPageEl = document.getElementById('barsPerPage');
-  const sectionsEl = document.getElementById('sections');
-  const pagesPerSectionEl = document.getElementById('pagesPerSection');
+  const totalPagesEl = document.getElementById('totalPagesInput');
   const targetMinEl = document.getElementById('targetMin');
   const targetSecEl = document.getElementById('targetSec');
 
   const timeOut = document.getElementById('timeOut');
   const totalBarsOut = document.getElementById('totalBars');
-  const totalPagesOut = document.getElementById('totalPages');
   const beatsPerBarOut = document.getElementById('beatsPerBar');
-  const sectionLengthOut = document.getElementById('sectionLength');
   const pageLengthOut = document.getElementById('pageLength');
   const barLengthOut = document.getElementById('barLength');
   const rowsVis = document.getElementById('rowsVis');
@@ -361,7 +387,6 @@
   const beatsNeededOut = document.getElementById('beatsNeeded');
   const barsPagesNeededOut = document.getElementById('barsPagesNeeded');
   const pagesNeededOut = document.getElementById('pagesNeeded');
-  const sectionsNeededOut = document.getElementById('sectionsNeeded');
   const actualLengthOut = document.getElementById('actualLength');
 
   function clampPositive(v, fallback){
@@ -387,15 +412,16 @@
 
   function formatShortTime(totalSeconds){
     if (!isFinite(totalSeconds) || totalSeconds < 0) return '—';
-    if (totalSeconds < 60) return `${totalSeconds.toFixed(2)}s`;
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toFixed(2).padStart(5, '0')}`;
+    const rounded = Math.round(totalSeconds);
+    if (rounded < 60) return `${rounded}s`;
+    const mins = Math.floor(rounded / 60);
+    const secs = rounded % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
   }
 
-  function drawRows(sections){
+  function drawRows(totalPages){
     rowsVis.innerHTML = '';
-    const count = Math.min(Math.max(Math.round(sections), 1), 32);
+    const count = Math.min(Math.max(Math.round(totalPages), 1), 32);
     for (let i = 0; i < count; i++){
       const cell = document.createElement('div');
       cell.className = 'cell';
@@ -409,23 +435,18 @@
     const num = clampPositive(numEl.value, 4);
     const den = clampPositive(denEl.value, 4);
     const barsPerPage = clampPositive(barsPerPageEl.value, 4);
-    const sections = clampPositive(sectionsEl.value, 1);
-    const pagesPerSection = clampPositive(pagesPerSectionEl.value, 1);
+    const totalPages = clampPositive(totalPagesEl.value, 1);
 
     const beatsPerBar = num * (4 / den);
     const barSeconds = (beatsPerBar / bpm) * 60;
     const pageSeconds = barSeconds * barsPerPage;
-    const sectionSeconds = pageSeconds * pagesPerSection;
 
-    const totalPages = sections * pagesPerSection;
     const totalBars = totalPages * barsPerPage;
-    const totalSeconds = sectionSeconds * sections;
+    const totalSeconds = pageSeconds * totalPages;
 
     timeOut.textContent = formatTime(totalSeconds);
     totalBarsOut.textContent = totalBars.toLocaleString(undefined, {maximumFractionDigits: 2});
-    totalPagesOut.textContent = totalPages.toLocaleString();
     beatsPerBarOut.textContent = beatsPerBar.toLocaleString(undefined, {maximumFractionDigits: 2});
-    sectionLengthOut.textContent = formatShortTime(sectionSeconds);
     pageLengthOut.textContent = formatShortTime(pageSeconds);
     barLengthOut.textContent = formatShortTime(barSeconds);
 
@@ -437,7 +458,6 @@
     const barsNeeded = Math.ceil(exactBars);
     const actualSeconds = barsNeeded * barSeconds;
     const pagesNeeded = barsNeeded / barsPerPage;
-    const sectionsNeeded = pagesNeeded / pagesPerSection;
 
     const stepsPerBar = 16 / barsPerPage;
     const stepsNeeded = barsNeeded * stepsPerBar;
@@ -448,13 +468,12 @@
     beatsNeededOut.textContent = beatsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     barsPagesNeededOut.textContent = barsNeeded.toLocaleString();
     pagesNeededOut.textContent = pagesNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
-    sectionsNeededOut.textContent = sectionsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     actualLengthOut.textContent = formatShortTime(actualSeconds);
 
-    drawRows(sections);
+    drawRows(totalPages);
   }
 
-  [bpmEl, numEl, denEl, barsPerPageEl, sectionsEl, pagesPerSectionEl, targetMinEl, targetSecEl].forEach(el => {
+  [bpmEl, numEl, denEl, barsPerPageEl, totalPagesEl, targetMinEl, targetSecEl].forEach(el => {
     el.addEventListener('input', calculate);
   });
 

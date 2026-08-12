@@ -10,10 +10,10 @@ Enter your song structure and the total duration calculates instantly:
 
 - **BPM** — your song's tempo (default: 120)
 - **Time Signature** — numerator / denominator (default: 4/4)
-- **Sections** — number of arranger rows in your song (verse, chorus, break, etc.)
-- **Bars per Section** — how many bars each section holds
+- **Bars per Page** — how many bars fit in one page (16 steps) at your current zoom level. 4 for quarter-note resolution in 4/4, 1 at default 16th-note zoom.
+- **Total Pages** — the length of your song, in pages
 
-Beats per bar, total bars, and total beats display alongside the song length.
+Bar length, page length, total bars, and beats per bar display alongside the song length.
 
 ## Notes
 
