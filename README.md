@@ -19,7 +19,6 @@ Beats per bar, total bars, and total beats display alongside the song length.
 
 - Beats per bar scales the time-signature numerator against a quarter-note denominator, so duration stays accurate for compound meters (e.g. 6/8, 3/4)
 - Works offline once loaded — bookmark it on your phone
-- Companion tool to [M8 Calculator](https://github.com/CraigDamlo/M8-Calculator)
 
 ## Live Version
 

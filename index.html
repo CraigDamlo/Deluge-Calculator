@@ -171,12 +171,16 @@
       </div>
     </div>
     <div class="field">
-      <label for="sections">Sections</label>
-      <input type="number" id="sections" value="8" min="1" step="1">
+      <label for="barsPerPage">Bars per Page</label>
+      <input type="number" id="barsPerPage" value="4" min="0.25" step="0.25">
     </div>
     <div class="field">
-      <label for="bars">Bars per Section</label>
-      <input type="number" id="bars" value="8" min="1" step="1">
+      <label for="sections">Sections</label>
+      <input type="number" id="sections" value="4" min="1" step="1">
+    </div>
+    <div class="field wide">
+      <label for="pagesPerSection">Pages per Section</label>
+      <input type="number" id="pagesPerSection" value="2" min="1" step="1">
     </div>
   </div>
 
@@ -194,8 +198,11 @@
     <div class="label">Bars Needed</div>
     <div class="time" id="barsNeededOut">—</div>
     <div class="breakdown">
-      <div class="k">Exact bars</div><div class="v" id="exactBars">—</div>
-      <div class="k">Sections (at current bars/section)</div><div class="v" id="sectionsNeeded">—</div>
+      <div class="k">Steps</div><div class="v" id="stepsNeeded">—</div>
+      <div class="k">Beats</div><div class="v" id="beatsNeeded">—</div>
+      <div class="k">Bars</div><div class="v" id="barsPagesNeeded">—</div>
+      <div class="k">Pages</div><div class="v" id="pagesNeeded">—</div>
+      <div class="k">Sections (at current pages/section)</div><div class="v" id="sectionsNeeded">—</div>
       <div class="k">Actual length (rounded)</div><div class="v" id="actualLength">—</div>
     </div>
   </div>
@@ -206,17 +213,19 @@
     <div class="rows" id="rowsVis"></div>
     <div class="breakdown">
       <div class="k">Section length</div><div class="v" id="sectionLength">—</div>
+      <div class="k">Page length</div><div class="v" id="pageLength">—</div>
       <div class="k">Bar length</div><div class="v" id="barLength">—</div>
+      <div class="k">Total pages</div><div class="v" id="totalPages">—</div>
       <div class="k">Total bars</div><div class="v" id="totalBars">—</div>
-      <div class="k">Total beats</div><div class="v" id="totalBeats">—</div>
       <div class="k">Beats per bar</div><div class="v" id="beatsPerBar">—</div>
     </div>
   </div>
 
   <p class="notes">
-    <strong>Bars Needed</strong> works backward from your BPM and time signature: enter a target length and it tells you how many bars a clip needs to hold so a drone or sustained note runs at least that long (rounded up to a whole bar, since Deluge clips loop on bar boundaries).<br>
+    <strong>Page</strong> is fixed at 16 steps — that's the one thing that never changes. <strong>Bars per Page</strong> is how many bars fit in those 16 steps at your current zoom level (4 bars/page if you're at quarter-note resolution in 4/4, 1 bar/page at the default 16th-note zoom). Set it to match how you actually work.<br>
+    <strong>Section</strong> length is entirely up to you — there's no fixed size. <strong>Pages per Section</strong> just says how many pages long you want that chunk of the arrangement to be.<br>
+    <strong>Bars Needed</strong> works backward from a target length using the same Bars per Page setting, so a drone's length shows up in pages too, not just bars.<br>
     <strong>Beats per bar</strong> scales the time-signature numerator against a quarter-note denominator (e.g. 6/8 = 3 quarter-note beats per bar), so duration stays accurate for compound meters.<br>
-    <strong>Sections</strong> are your arranger rows — verse, chorus, break, etc.<br>
     Works offline once loaded — bookmark it on your phone.
   </p>
 
@@ -255,38 +264,53 @@
       <strong>Page</strong> is real Deluge terminology — it's the 16 steps of the pad grid visible on screen at once (default zoom). Scroll left/right and you move a full page at a time. It also shows up loosely for the OLED's parameter screens (filter page, envelope page), but on the pad grid it means those 16 visible steps specifically.
     </p>
 
-    <h2>Bar → Clip → Section → Song</h2>
-    <svg viewBox="0 0 460 270" class="diagram" role="img" aria-label="Diagram showing how steps build into bars, pages, clips, sections, and the arranged song">
-      <!-- steps -->
-      <text x="20" y="24" class="d-label small">Step</text>
-      <g id="stepRow"></g>
-      <text x="330" y="24" class="d-label tiny dim">16 steps = 1 page = 1 bar (default resolution)</text>
-      <rect x="68" y="8" width="204" height="20" rx="3" fill="none" stroke="var(--accent-2)" stroke-dasharray="3,2"/>
-      <text x="170" y="46" text-anchor="middle" class="d-label tiny dim">Page — the 16 steps visible on screen at once</text>
+    <h2>Step → Beat → Bar / Page → Clip → Section → Song</h2>
+    <svg viewBox="0 0 460 320" class="diagram" role="img" aria-label="Diagram building from a single step up through beats, bars, pages, clips, sections, to the full song">
 
-      <!-- bar -->
-      <text x="20" y="92" class="d-label small">Bar</text>
-      <rect x="70" y="76" width="120" height="20" rx="3" fill="none" stroke="var(--accent)"/>
-      <text x="200" y="90" class="d-label tiny dim">One measure of music</text>
+      <!-- SONG (top) -->
+      <text x="20" y="36" class="d-label small">Song</text>
+      <g id="songRow"></g>
+      <text x="150" y="36" class="d-label tiny dim">sections in order, over time</text>
 
-      <!-- clip -->
-      <text x="20" y="138" class="d-label small">Clip</text>
-      <rect x="70" y="118" width="240" height="24" rx="3" fill="var(--accent-2)" opacity="0.35" stroke="var(--accent-2)"/>
-      <text x="80" y="134" class="d-label tiny">4 bars, looped</text>
-      <text x="330" y="136" class="d-label tiny dim">A loopable pattern on one track</text>
+      <text x="250" y="58" text-anchor="middle" class="d-label tiny dim">↑ sections placed in order, over time = the Song</text>
 
-      <!-- section -->
-      <text x="20" y="184" class="d-label small">Section</text>
-      <rect x="70" y="164" width="24" height="24" rx="3" fill="var(--accent-2)"/>
-      <rect x="98" y="164" width="24" height="24" rx="3" fill="var(--accent-2)"/>
-      <rect x="126" y="164" width="24" height="24" rx="3" fill="var(--green)" opacity="0.4"/>
-      <text x="200" y="180" class="d-label tiny dim">Clips sharing a color, launchable</text>
-      <text x="200" y="194" class="d-label tiny dim">together in Song view</text>
+      <!-- SECTION -->
+      <text x="20" y="84" class="d-label small">Section</text>
+      <rect x="70" y="68" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="98" y="68" width="24" height="24" rx="3" fill="var(--accent-2)"/>
+      <rect x="126" y="68" width="24" height="24" rx="3" fill="var(--green)" opacity="0.4"/>
+      <text x="180" y="84" class="d-label tiny dim">clips sharing a color</text>
 
-      <!-- arranger -->
-      <text x="20" y="236" class="d-label small">Arranger</text>
-      <g id="arrangerRow"></g>
-      <text x="200" y="254" class="d-label tiny dim">Sections placed in order over time = the song</text>
+      <text x="250" y="106" text-anchor="middle" class="d-label tiny dim">↑ clips sharing a color = 1 Section</text>
+
+      <!-- CLIP -->
+      <text x="20" y="132" class="d-label small">Clip</text>
+      <rect x="64" y="110" width="126" height="36" rx="4" fill="none" stroke="var(--accent-2)" stroke-dasharray="3,2"/>
+      <g id="clipRow"></g>
+      <text x="200" y="132" class="d-label tiny dim">your bars/pages, looped as one pattern</text>
+
+      <text x="250" y="154" text-anchor="middle" class="d-label tiny dim">↑ however many bars/pages you set = 1 Clip</text>
+
+      <!-- BAR / PAGE -->
+      <text x="20" y="182" class="d-label small">Bar</text>
+      <text x="20" y="198" class="d-label small">Page</text>
+      <g id="barPageGrid"></g>
+      <text x="150" y="200" class="d-label tiny dim">16 steps — one screen,</text>
+      <text x="150" y="212" class="d-label tiny dim">however many bars fit at your zoom</text>
+
+      <text x="250" y="243" text-anchor="middle" class="d-label tiny dim">↑ your Bars per Page setting = 1 Page (16 steps)</text>
+
+      <!-- BEAT -->
+      <text x="20" y="264" class="d-label small">Beat</text>
+      <g id="beatRow"></g>
+      <text x="150" y="264" class="d-label tiny dim">a quarter note</text>
+
+      <text x="250" y="281" text-anchor="middle" class="d-label tiny dim">↑ steps per beat also shifts with your zoom</text>
+
+      <!-- STEP (bottom) -->
+      <text x="20" y="302" class="d-label small">Step</text>
+      <rect x="70" y="291" width="14" height="14" rx="2" fill="var(--accent)"/>
+      <text x="150" y="302" class="d-label tiny dim">1 square — a 16th note, the smallest unit</text>
     </svg>
   </section>
 
@@ -311,27 +335,32 @@
     .d-label.dim{ fill: var(--dim); }
   </style>
 
-  <footer>Themed with Dracula Classic — a companion to M8 Calculator</footer>
+  <footer>Themed with Dracula Classic</footer>
 </main>
 
 <script>
   const bpmEl = document.getElementById('bpm');
   const numEl = document.getElementById('tsigNum');
   const denEl = document.getElementById('tsigDen');
+  const barsPerPageEl = document.getElementById('barsPerPage');
   const sectionsEl = document.getElementById('sections');
-  const barsEl = document.getElementById('bars');
+  const pagesPerSectionEl = document.getElementById('pagesPerSection');
   const targetMinEl = document.getElementById('targetMin');
   const targetSecEl = document.getElementById('targetSec');
 
   const timeOut = document.getElementById('timeOut');
   const totalBarsOut = document.getElementById('totalBars');
-  const totalBeatsOut = document.getElementById('totalBeats');
+  const totalPagesOut = document.getElementById('totalPages');
   const beatsPerBarOut = document.getElementById('beatsPerBar');
   const sectionLengthOut = document.getElementById('sectionLength');
+  const pageLengthOut = document.getElementById('pageLength');
   const barLengthOut = document.getElementById('barLength');
   const rowsVis = document.getElementById('rowsVis');
   const barsNeededOut = document.getElementById('barsNeededOut');
-  const exactBarsOut = document.getElementById('exactBars');
+  const stepsNeededOut = document.getElementById('stepsNeeded');
+  const beatsNeededOut = document.getElementById('beatsNeeded');
+  const barsPagesNeededOut = document.getElementById('barsPagesNeeded');
+  const pagesNeededOut = document.getElementById('pagesNeeded');
   const sectionsNeededOut = document.getElementById('sectionsNeeded');
   const actualLengthOut = document.getElementById('actualLength');
 
@@ -379,21 +408,25 @@
     const bpm = clampPositive(bpmEl.value, 120);
     const num = clampPositive(numEl.value, 4);
     const den = clampPositive(denEl.value, 4);
+    const barsPerPage = clampPositive(barsPerPageEl.value, 4);
     const sections = clampPositive(sectionsEl.value, 1);
-    const bars = clampPositive(barsEl.value, 1);
+    const pagesPerSection = clampPositive(pagesPerSectionEl.value, 1);
 
     const beatsPerBar = num * (4 / den);
-    const totalBars = sections * bars;
-    const totalBeats = totalBars * beatsPerBar;
-    const totalSeconds = (totalBeats / bpm) * 60;
     const barSeconds = (beatsPerBar / bpm) * 60;
-    const sectionSeconds = barSeconds * bars;
+    const pageSeconds = barSeconds * barsPerPage;
+    const sectionSeconds = pageSeconds * pagesPerSection;
+
+    const totalPages = sections * pagesPerSection;
+    const totalBars = totalPages * barsPerPage;
+    const totalSeconds = sectionSeconds * sections;
 
     timeOut.textContent = formatTime(totalSeconds);
-    totalBarsOut.textContent = totalBars.toLocaleString();
-    totalBeatsOut.textContent = totalBeats.toLocaleString(undefined, {maximumFractionDigits: 2});
+    totalBarsOut.textContent = totalBars.toLocaleString(undefined, {maximumFractionDigits: 2});
+    totalPagesOut.textContent = totalPages.toLocaleString();
     beatsPerBarOut.textContent = beatsPerBar.toLocaleString(undefined, {maximumFractionDigits: 2});
     sectionLengthOut.textContent = formatShortTime(sectionSeconds);
+    pageLengthOut.textContent = formatShortTime(pageSeconds);
     barLengthOut.textContent = formatShortTime(barSeconds);
 
     const targetMin = clampNonNegative(targetMinEl.value, 1);
@@ -403,17 +436,25 @@
     const exactBars = targetTotalSeconds / barSeconds;
     const barsNeeded = Math.ceil(exactBars);
     const actualSeconds = barsNeeded * barSeconds;
-    const sectionsNeeded = barsNeeded / bars;
+    const pagesNeeded = barsNeeded / barsPerPage;
+    const sectionsNeeded = pagesNeeded / pagesPerSection;
+
+    const stepsPerBar = 16 / barsPerPage;
+    const stepsNeeded = barsNeeded * stepsPerBar;
+    const beatsNeeded = barsNeeded * beatsPerBar;
 
     barsNeededOut.textContent = `${barsNeeded} bar${barsNeeded === 1 ? '' : 's'}`;
-    exactBarsOut.textContent = exactBars.toLocaleString(undefined, {maximumFractionDigits: 2});
+    stepsNeededOut.textContent = stepsNeeded.toLocaleString(undefined, {maximumFractionDigits: 0});
+    beatsNeededOut.textContent = beatsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
+    barsPagesNeededOut.textContent = barsNeeded.toLocaleString();
+    pagesNeededOut.textContent = pagesNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     sectionsNeededOut.textContent = sectionsNeeded.toLocaleString(undefined, {maximumFractionDigits: 2});
     actualLengthOut.textContent = formatShortTime(actualSeconds);
 
     drawRows(sections);
   }
 
-  [bpmEl, numEl, denEl, sectionsEl, barsEl, targetMinEl, targetSecEl].forEach(el => {
+  [bpmEl, numEl, denEl, barsPerPageEl, sectionsEl, pagesPerSectionEl, targetMinEl, targetSecEl].forEach(el => {
     el.addEventListener('input', calculate);
   });
 
@@ -444,21 +485,48 @@
     }
   }
 
-  function drawStepRow(){
-    const group = document.getElementById('stepRow');
+  function drawBeatRow(){
+    const group = document.getElementById('beatRow');
     if (!group) return;
-    const count = 16, size = 12, gap = 2, startX = 70, y = 10;
+    const count = 4, size = 14, gap = 3, startX = 70, y = 253;
     for (let i = 0; i < count; i++){
-      const rect = svgEl('rect', {
+      group.appendChild(svgEl('rect', {
         x: startX + i * (size + gap), y, width: size, height: size, rx: 2,
-        fill: 'none', stroke: 'var(--accent)'
-      });
-      group.appendChild(rect);
+        fill: 'var(--accent)', opacity: 0.55
+      }));
     }
   }
 
-  function drawArrangerRow(){
-    const group = document.getElementById('arrangerRow');
+  function drawBarPageGrid(){
+    const group = document.getElementById('barPageGrid');
+    if (!group) return;
+    const cols = 4, rows = 4, size = 14, gap = 3, startX = 70, startY = 164;
+    for (let r = 0; r < rows; r++){
+      for (let c = 0; c < cols; c++){
+        group.appendChild(svgEl('rect', {
+          x: startX + c * (size + gap),
+          y: startY + r * (size + gap),
+          width: size, height: size, rx: 2,
+          fill: 'var(--accent)', opacity: 0.35 + (0.1 * r)
+        }));
+      }
+    }
+  }
+
+  function drawClipRow(){
+    const group = document.getElementById('clipRow');
+    if (!group) return;
+    const count = 3, width = 34, height = 24, gap = 6, startX = 70, y = 116;
+    for (let i = 0; i < count; i++){
+      group.appendChild(svgEl('rect', {
+        x: startX + i * (width + gap), y, width, height, rx: 3,
+        fill: 'var(--accent)', opacity: 0.3, stroke: 'var(--accent)'
+      }));
+    }
+  }
+
+  function drawSongRow(){
+    const group = document.getElementById('songRow');
     if (!group) return;
     const pattern = [
       { w: 40, color: 'var(--accent-2)' },
@@ -469,7 +537,7 @@
       { w: 40, color: 'var(--accent-2)' },
     ];
     let x = 70;
-    const y = 218, h = 24;
+    const y = 20, h = 24;
     pattern.forEach(seg => {
       group.appendChild(svgEl('rect', {
         x, y, width: seg.w, height: h, rx: 2,
@@ -480,8 +548,10 @@
   }
 
   drawPadGrid();
-  drawStepRow();
-  drawArrangerRow();
+  drawBeatRow();
+  drawBarPageGrid();
+  drawClipRow();
+  drawSongRow();
 
   calculate();
 </script>
